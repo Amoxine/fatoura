@@ -1,6 +1,7 @@
 "use client"
 
-import type { DocumentData, LineItem } from "@/app/page"
+import type { DocumentData, LineItem } from "@/types/invoice"
+import { useInvoiceStore } from "@/store/invoice-store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,54 +10,29 @@ import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Trash2 } from "lucide-react"
 
-interface QuickEditFormProps {
-  documentData: DocumentData
-  setDocumentData: (data: DocumentData) => void
-}
+export function QuickEditForm() {
+  const documentData = useInvoiceStore((state) => state.documentData)
+  const updateDocumentData = useInvoiceStore((state) => state.updateDocumentData)
+  const updateLineItem = useInvoiceStore((state) => state.updateLineItem)
+  const addLineItem = useInvoiceStore((state) => state.addLineItem)
+  const removeLineItem = useInvoiceStore((state) => state.removeLineItem)
 
-export function QuickEditForm({ documentData, setDocumentData }: QuickEditFormProps) {
   const updateField = (field: keyof DocumentData, value: string) => {
-    setDocumentData({ ...documentData, [field]: value })
+    updateDocumentData({ ...documentData, [field]: value })
   }
 
-  const addLineItem = () => {
-    const newItem: LineItem = {
-      id: Date.now().toString(),
-      description: "",
-      quantity: 1,
-      rate: 0,
-      amount: 0,
-      currency: documentData.template.currency,
-      taxRate: documentData.template.taxRate,
-    }
-    setDocumentData({
-      ...documentData,
-      items: [...documentData.items, newItem],
-    })
+  const handleAddLineItem = () => {
+    addLineItem()
   }
 
-  const removeLineItem = (id: string) => {
+  const handleRemoveLineItem = (id: string) => {
     if (documentData.items.length > 1) {
-      setDocumentData({
-        ...documentData,
-        items: documentData.items.filter((item) => item.id !== id),
-      })
+      removeLineItem(id)
     }
   }
 
-  const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
-    const updatedItems = documentData.items.map((item) => {
-      if (item.id === id) {
-        const updated = { ...item, [field]: value }
-        if (field === "quantity" || field === "rate" || field === "taxRate") {
-          updated.amount =
-            updated.quantity * updated.rate * (1 + (updated.taxRate ?? documentData.template.taxRate) / 100)
-        }
-        return updated
-      }
-      return item
-    })
-    setDocumentData({ ...documentData, items: updatedItems })
+  const handleUpdateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
+    updateLineItem(id, field, value)
   }
 
   return (
@@ -165,7 +141,7 @@ export function QuickEditForm({ documentData, setDocumentData }: QuickEditFormPr
       <Card className="p-4 bg-white">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-sm">Line Items</h3>
-          <Button onClick={addLineItem} size="sm" variant="outline" className="h-8 bg-transparent">
+          <Button onClick={handleAddLineItem} size="sm" variant="outline" className="h-8 bg-transparent">
             <Plus className="w-3 h-3 mr-1" />
             Add
           </Button>
@@ -179,7 +155,7 @@ export function QuickEditForm({ documentData, setDocumentData }: QuickEditFormPr
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => removeLineItem(item.id)}
+                    onClick={() => handleRemoveLineItem(item.id)}
                     className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -190,7 +166,7 @@ export function QuickEditForm({ documentData, setDocumentData }: QuickEditFormPr
                 <Label className="text-xs">Description</Label>
                 <Input
                   value={item.description}
-                  onChange={(e) => updateLineItem(item.id, "description", e.target.value)}
+                  onChange={(e) => handleUpdateLineItem(item.id, "description", e.target.value)}
                   className="h-8 text-sm"
                   placeholder="Item description"
                 />
@@ -202,7 +178,7 @@ export function QuickEditForm({ documentData, setDocumentData }: QuickEditFormPr
                     type="number"
                     min="1"
                     value={item.quantity}
-                    onChange={(e) => updateLineItem(item.id, "quantity", Number.parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleUpdateLineItem(item.id, "quantity", Number.parseFloat(e.target.value) || 0)}
                     className="h-8 text-sm"
                   />
                 </div>
@@ -213,7 +189,7 @@ export function QuickEditForm({ documentData, setDocumentData }: QuickEditFormPr
                     min="0"
                     step="0.01"
                     value={item.rate}
-                    onChange={(e) => updateLineItem(item.id, "rate", Number.parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleUpdateLineItem(item.id, "rate", Number.parseFloat(e.target.value) || 0)}
                     className="h-8 text-sm"
                   />
                 </div>
@@ -221,7 +197,7 @@ export function QuickEditForm({ documentData, setDocumentData }: QuickEditFormPr
                   <Label className="text-xs">Currency</Label>
                   <Select
                     value={item.currency || documentData.template.currency}
-                    onValueChange={(value) => updateLineItem(item.id, "currency", value)}
+                    onValueChange={(value) => handleUpdateLineItem(item.id, "currency", value)}
                   >
                     <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
@@ -245,7 +221,7 @@ export function QuickEditForm({ documentData, setDocumentData }: QuickEditFormPr
                     max="100"
                     step="0.1"
                     value={item.taxRate ?? documentData.template.taxRate}
-                    onChange={(e) => updateLineItem(item.id, "taxRate", Number.parseFloat(e.target.value) || 0)}
+                    onChange={(e) => handleUpdateLineItem(item.id, "taxRate", Number.parseFloat(e.target.value) || 0)}
                     className="h-8 text-sm"
                   />
                 </div>

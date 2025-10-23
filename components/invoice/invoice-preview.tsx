@@ -1,16 +1,14 @@
 "use client"
 
-import type { DocumentData, LineItem, PaperSize } from "@/app/page"
+import type { LineItem, PaperSize } from "@/types/invoice"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, X } from "lucide-react"
-import { useState } from "react"
+import { useInvoiceStore } from "@/store/invoice-store"
 
 interface InvoicePreviewProps {
-  documentData: DocumentData
-  setDocumentData?: (data: DocumentData) => void
   paperSize?: PaperSize
 }
 
@@ -27,8 +25,10 @@ const getPaperDimensions = (size: PaperSize) => {
   }
 }
 
-export function InvoicePreview({ documentData, setDocumentData, paperSize = "A4" }: InvoicePreviewProps) {
-  const [isEditing, setIsEditing] = useState(false)
+export function InvoicePreview({ paperSize = "A4" }: InvoicePreviewProps) {
+  const store = useInvoiceStore()
+  const documentData = store.documentData
+  const setDocumentData = store.setDocumentData
 
   const subtotal = documentData.items.reduce((sum, item) => sum + item.amount, 0)
   const tax = documentData.template.showTax ? subtotal * (documentData.template.taxRate / 100) : 0
@@ -41,59 +41,49 @@ export function InvoicePreview({ documentData, setDocumentData, paperSize = "A4"
   const fontFamilyClass = fontFamily === "serif" ? "font-serif" : fontFamily === "mono" ? "font-mono" : "font-sans"
 
   const updateField = (field: string, value: any) => {
-    if (setDocumentData) {
-      setDocumentData({ ...documentData, [field]: value })
-    }
+    setDocumentData({ ...documentData, [field]: value })
   }
 
   const clearField = (field: string) => {
-    if (setDocumentData) {
-      setDocumentData({ ...documentData, [field]: "" })
-    }
+    setDocumentData({ ...documentData, [field]: "" })
   }
 
   const updateItem = (index: number, field: keyof LineItem, value: any) => {
-    if (setDocumentData) {
-      const newItems = [...documentData.items]
-      newItems[index] = { ...newItems[index], [field]: value }
+    const newItems = [...documentData.items]
+    newItems[index] = { ...newItems[index], [field]: value }
 
-      if (field === "quantity" || field === "rate") {
-        const qty = field === "quantity" ? Number(value) : newItems[index].quantity
-        const rate = field === "rate" ? Number(value) : newItems[index].rate
-        newItems[index].amount = qty * rate
-      }
-
-      setDocumentData({ ...documentData, items: newItems })
+    if (field === "quantity" || field === "rate") {
+      const qty = field === "quantity" ? Number(value) : newItems[index].quantity
+      const rate = field === "rate" ? Number(value) : newItems[index].rate
+      newItems[index].amount = qty * rate
     }
+
+    setDocumentData({ ...documentData, items: newItems })
   }
 
   const addItem = () => {
-    if (setDocumentData) {
-      const newItem: LineItem = {
-        id: Date.now().toString(),
-        description: "",
-        quantity: 1,
-        rate: 0,
-        amount: 0,
-      }
-      setDocumentData({ ...documentData, items: [...documentData.items, newItem] })
+    const newItem: LineItem = {
+      id: Date.now().toString(),
+      description: "",
+      quantity: 1,
+      rate: 0,
+      amount: 0,
     }
+    setDocumentData({ ...documentData, items: [...documentData.items, newItem] })
   }
 
   const removeItem = (index: number) => {
-    if (setDocumentData && documentData.items.length > 1) {
+    if (documentData.items.length > 1) {
       const newItems = documentData.items.filter((_, i) => i !== index)
       setDocumentData({ ...documentData, items: newItems })
     }
   }
 
   const updateLogo = (url: string) => {
-    if (setDocumentData) {
-      setDocumentData({
-        ...documentData,
-        template: { ...documentData.template, logoUrl: url },
-      })
-    }
+    setDocumentData({
+      ...documentData,
+      template: { ...documentData.template, logoUrl: url },
+    })
   }
 
   if (documentData.template.templateType === "compact") {
@@ -528,8 +518,8 @@ function CompactTemplate({
   setDocumentData,
   dimensions,
 }: {
-  documentData: DocumentData
-  setDocumentData?: (data: DocumentData) => void
+  documentData: any
+  setDocumentData: (data: any) => void
   dimensions: { width: string; height: string }
 }) {
   const subtotal = documentData.items.reduce((sum, item) => sum + item.amount, 0)
@@ -540,41 +530,35 @@ function CompactTemplate({
   const { currency, labels } = documentData.template
 
   const updateField = (field: string, value: any) => {
-    if (setDocumentData) {
-      setDocumentData({ ...documentData, [field]: value })
-    }
+    setDocumentData({ ...documentData, [field]: value })
   }
 
   const updateItem = (index: number, field: keyof LineItem, value: any) => {
-    if (setDocumentData) {
-      const newItems = [...documentData.items]
-      newItems[index] = { ...newItems[index], [field]: value }
+    const newItems = [...documentData.items]
+    newItems[index] = { ...newItems[index], [field]: value }
 
-      if (field === "quantity" || field === "rate") {
-        const qty = field === "quantity" ? Number(value) : newItems[index].quantity
-        const rate = field === "rate" ? Number(value) : newItems[index].rate
-        newItems[index].amount = qty * rate
-      }
-
-      setDocumentData({ ...documentData, items: newItems })
+    if (field === "quantity" || field === "rate") {
+      const qty = field === "quantity" ? Number(value) : newItems[index].quantity
+      const rate = field === "rate" ? Number(value) : newItems[index].rate
+      newItems[index].amount = qty * rate
     }
+
+    setDocumentData({ ...documentData, items: newItems })
   }
 
   const addItem = () => {
-    if (setDocumentData) {
-      const newItem: LineItem = {
-        id: Date.now().toString(),
-        description: "",
-        quantity: 1,
-        rate: 0,
-        amount: 0,
-      }
-      setDocumentData({ ...documentData, items: [...documentData.items, newItem] })
+    const newItem: LineItem = {
+      id: Date.now().toString(),
+      description: "",
+      quantity: 1,
+      rate: 0,
+      amount: 0,
     }
+    setDocumentData({ ...documentData, items: [...documentData.items, newItem] })
   }
 
   const removeItem = (index: number) => {
-    if (setDocumentData && documentData.items.length > 1) {
+    if (documentData.items.length > 1) {
       const newItems = documentData.items.filter((_, i) => i !== index)
       setDocumentData({ ...documentData, items: newItems })
     }
